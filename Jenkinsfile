@@ -16,7 +16,7 @@ pipeline {
             steps {
                 sh 'git --version'
                 sh 'docker --version'
-                sh 'docker compose --version'
+                sh 'docker compose version'
             }
         }
 
