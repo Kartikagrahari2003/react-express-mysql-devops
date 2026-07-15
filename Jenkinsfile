@@ -19,6 +19,16 @@ pipeline {
                 sh 'docker compose version'
             }
         }
+        stage('Debug User') {
+            steps {
+                sh '''
+                whoami
+                id
+                groups
+                docker ps
+                '''
+            }
+        }
 
         stage('Build Docker Images') {
             steps {
