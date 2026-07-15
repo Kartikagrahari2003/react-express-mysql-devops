@@ -48,5 +48,21 @@ pipeline {
             }
         }
 
+        stage('Deploy Application') {
+            steps {
+                echo 'Stopping old containers...'
+
+                sh '''
+                    docker compose down || true
+                '''
+
+                echo 'Starting application...'
+
+                sh '''
+                    docker compose up -d
+                '''
+            }
+        }
+
     }
 }
