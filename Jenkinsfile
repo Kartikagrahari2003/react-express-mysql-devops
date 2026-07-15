@@ -19,23 +19,6 @@ pipeline {
                 sh 'docker compose version'
             }
         }
-        stage('Debug User') {
-            steps {
-                sh '''
-                whoami
-                id
-                groups
-                docker ps
-                '''
-            }
-        }
-
-        stage('Build Docker Images') {
-            steps {
-                echo 'Building Docker images...'
-                sh 'docker compose build'
-            }
-        }
 
         stage('Debug User') {
             steps {
@@ -55,6 +38,13 @@ pipeline {
                     echo "===== DOCKER TEST ====="
                     docker ps
                 '''
+            }
+        }
+
+        stage('Build Docker Images') {
+            steps {
+                echo 'Building Docker images...'
+                sh 'docker compose build'
             }
         }
 
