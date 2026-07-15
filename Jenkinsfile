@@ -64,5 +64,19 @@ pipeline {
             }
         }
 
+        stage('Verify Deployment') {
+            steps {
+                echo 'Verifying running containers...'
+                sh 'docker ps'
+            }
+        }
+
+        stage('Health Check') {
+            steps {
+                echo 'Checking application health...'
+                sh 'curl http://localhost:3000'
+            }
+        }
+
     }
 }
