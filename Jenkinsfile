@@ -1,31 +1,20 @@
-pipeline {
-    agent any
+stage('Debug User') {
+    steps {
+        sh '''
+        echo "===== WHOAMI ====="
+        whoami
 
-    stages {
+        echo "===== ID ====="
+        id
 
-        stage('Checkout Verification') {
-            steps {
-                echo 'Repository cloned successfully'
+        echo "===== GROUPS ====="
+        groups
 
-                sh 'pwd'
-                sh 'ls -la'
-            }
-        }
+        echo "===== DOCKER SOCKET ====="
+        ls -l /var/run/docker.sock
 
-        stage('Environment Verification') {
-            steps {
-                sh 'git --version'
-                sh 'docker --version'
-                sh 'docker compose version'
-            }
-        }
-
-        stage('Build Docker Images') {
-            steps {
-                echo 'Building Docker images...'
-                sh 'docker compose build'
-            }
-        }
-
+        echo "===== DOCKER TEST ====="
+        docker ps
+        '''
     }
 }
