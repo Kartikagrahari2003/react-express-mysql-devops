@@ -6,16 +6,20 @@ pipeline {
         stage('Checkout Verification') {
             steps {
                 echo 'Repository cloned successfully'
-                sh 'pwd'
-                sh 'ls -la'
+                sh '''
+                pwd
+                ls -la
+                '''
             }
         }
 
         stage('Environment Verification') {
             steps {
-                sh 'git --version'
-                sh 'docker --version'
-                sh 'docker compose version'
+                sh '''
+                git --version
+                docker --version
+                docker compose version
+                '''
             }
         }
 
@@ -41,7 +45,9 @@ pipeline {
             steps {
                 sh '''
                 aws ecr get-login-password --region ap-south-1 | \
-                docker login --username AWS --password-stdin \
+                docker login \
+                --username AWS \
+                --password-stdin \
                 889088857850.dkr.ecr.ap-south-1.amazonaws.com
                 '''
             }
@@ -79,11 +85,10 @@ pipeline {
 
         stage('Deploy Application') {
             steps {
-                echo 'Stopping old containers...'
-                sh 'docker compose down || true'
-
-                echo 'Starting application...'
-                sh 'docker compose up -d'
+                sh '''
+                docker compose down || true
+                docker compose up -d
+                '''
             }
         }
 
@@ -92,19 +97,21 @@ pipeline {
                 sh 'docker ps'
             }
         }
-        
 
         stage('Health Check') {
             steps {
                 sh '''
                 for i in {1..10}; do
-                if curl --fail http://localhost:3000; then
-                    exit 0
-                fi
-                echo "Waiting..."
-                sleep 5
+                    if curl --fail http://localhost:3000; then
+                        echo "Application is Healthy."
+                        exit 0
+                    fi
+
+                    echo "Waiting for application..."
+                    sleep 5
                 done
 
+                echo "Health Check Failed!"
                 exit 1
                 '''
             }
@@ -113,6 +120,23 @@ pipeline {
         stage('Application Logs') {
             steps {
                 sh 'docker compose logs --tail=20'
+            }
+        }
+
+        stage('Deploy to Production via SSM') {
+            steps {
+                sh '''
+                aws ssm send-command \
+                  --instance-ids i-0f27a796006cc2e8e \
+                  --document-name AWS-RunShellScript \
+                  --region ap-south-1 \
+                  --parameters commands='[
+                    "cd /home/ubuntu/react-express-mysql-devops",
+                    "aws ecr get-login-password --region ap-south-1 | docker login --username AWS --password-stdin 889088857850.dkr.ecr.ap-south-1.amazonaws.com",
+                    "docker compose -f compose.prod.yaml pull",
+                    "docker compose -f compose.prod.yaml up -d --remove-orphans"
+                  ]'
+                '''
             }
         }
 
@@ -142,23 +166,7 @@ pipeline {
         }
 
         failure {
-            echo "Deployment failed. Check console logs."
-        }
-    }
-    stage('Deploy to Production via SSM') {
-        steps {
-            sh '''
-            aws ssm send-command \
-            --instance-ids i-0f27a796006cc2e8e \
-            --document-name "AWS-RunShellScript" \
-            --region ap-south-1 \
-            --parameters 'commands=[
-            "cd /home/ubuntu/react-express-mysql-devops",
-            "aws ecr get-login-password --region ap-south-1 | docker login --username AWS --password-stdin 889088857850.dkr.ecr.ap-south-1.amazonaws.com",
-            "docker compose -f compose.prod.yaml pull",
-            "docker compose -f compose.prod.yaml up -d --remove-orphans"
-            ]'
-            '''
+            echo "Deployment failed. Check Jenkins console logs."
         }
     }
 }
