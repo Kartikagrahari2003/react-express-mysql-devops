@@ -37,6 +37,46 @@ pipeline {
             }
         }
 
+        stage('Login to Amazon ECR') {
+            steps {
+                sh '''
+                aws ecr get-login-password --region ap-south-1 | \
+                docker login --username AWS --password-stdin \
+                889088857850.dkr.ecr.ap-south-1.amazonaws.com
+                '''
+            }
+        }
+
+        stage('Tag Docker Images') {
+            steps {
+                sh '''
+                docker tag react-express-mysql-devops-backend:latest \
+                889088857850.dkr.ecr.ap-south-1.amazonaws.com/react-express-backend:$BUILD_NUMBER
+
+                docker tag react-express-mysql-devops-backend:latest \
+                889088857850.dkr.ecr.ap-south-1.amazonaws.com/react-express-backend:latest
+
+                docker tag react-express-mysql-devops-frontend:latest \
+                889088857850.dkr.ecr.ap-south-1.amazonaws.com/react-express-frontend:$BUILD_NUMBER
+
+                docker tag react-express-mysql-devops-frontend:latest \
+                889088857850.dkr.ecr.ap-south-1.amazonaws.com/react-express-frontend:latest
+                '''
+            }
+        }
+
+        stage('Push Images to Amazon ECR') {
+            steps {
+                sh '''
+                docker push 889088857850.dkr.ecr.ap-south-1.amazonaws.com/react-express-backend:$BUILD_NUMBER
+                docker push 889088857850.dkr.ecr.ap-south-1.amazonaws.com/react-express-backend:latest
+
+                docker push 889088857850.dkr.ecr.ap-south-1.amazonaws.com/react-express-frontend:$BUILD_NUMBER
+                docker push 889088857850.dkr.ecr.ap-south-1.amazonaws.com/react-express-frontend:latest
+                '''
+            }
+        }
+
         stage('Deploy Application') {
             steps {
                 echo 'Stopping old containers...'
