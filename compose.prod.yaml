@@ -1,67 +1,55 @@
 services:
   backend:
-    build:
-      args:
-      - NODE_ENV=production
-      context: backend
-      target: development
-    command: npm run start-watch
-    environment:
-      - DATABASE_DB=example
-      - DATABASE_USER=root
-      - DATABASE_PASSWORD=/run/secrets/db-password
-      - DATABASE_HOST=db
-      - NODE_ENV=production
+    image: 889088857850.dkr.ecr.ap-south-1.amazonaws.com/react-express-backend:latest
+    container_name: backend
     ports:
-      - 80:80
-    
-    secrets:
-      - db-password
-    volumes:
-      - ./backend/src:/code/src:ro
-      - ./backend/package.json:/code/package.json
-      - ./backend/package-lock.json:/code/package-lock.json
-      - back-notused:/opt/app/node_modules
-    networks:
-      - public
-      - private
+      - "80:80"
+    environment:
+      DATABASE_DB: example
+      DATABASE_USER: root
+      DATABASE_PASSWORD: /run/secrets/db-password
+      DATABASE_HOST: db
+      NODE_ENV: production
     depends_on:
       - db
-  db:
-    # We use a mariadb image which supports both amd64 & arm64 architecture
-    image: mariadb:10.6.4-focal
-    # If you really want to use MySQL, uncomment the following line
-    #image: mysql:8.0.27
-    command: '--default-authentication-plugin=mysql_native_password'
-    restart: always
     secrets:
       - db-password
-    volumes:
-      - db-data:/var/lib/mysql
     networks:
       - private
-    environment:
-      - MYSQL_DATABASE=example
-      - MYSQL_ROOT_PASSWORD_FILE=/run/secrets/db-password
-  frontend:
-    build:
-      context: frontend
-      # target: development
-    ports:
-      - 3000:3000
-    volumes:
-      - ./frontend/src:/code/src
-      - /code/node_modules
-    networks:
       - public
+
+  frontend:
+    image: 889088857850.dkr.ecr.ap-south-1.amazonaws.com/react-express-frontend:latest
+    container_name: frontend
+    ports:
+      - "3000:80"
     depends_on:
       - backend
+    networks:
+      - public
+
+  db:
+    image: mariadb:10.6.4-focal
+    container_name: db
+    restart: always
+    command: --default-authentication-plugin=mysql_native_password
+    environment:
+      MYSQL_DATABASE: example
+      MYSQL_ROOT_PASSWORD_FILE: /run/secrets/db-password
+    volumes:
+      - db-data:/var/lib/mysql
+    secrets:
+      - db-password
+    networks:
+      - private
+
 networks:
   public:
   private:
+
 volumes:
-  back-notused:
   db-data:
+
 secrets:
   db-password:
-    file: db/password.txt
+    file: ./db/password.txt
