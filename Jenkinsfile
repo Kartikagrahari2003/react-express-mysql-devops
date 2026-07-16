@@ -92,11 +92,20 @@ pipeline {
                 sh 'docker ps'
             }
         }
+        
 
         stage('Health Check') {
             steps {
                 sh '''
-                curl --fail http://localhost:3000
+                for i in {1..10}; do
+                if curl --fail http://localhost:3000; then
+                    exit 0
+                fi
+                echo "Waiting..."
+                sleep 5
+                done
+
+                exit 1
                 '''
             }
         }
