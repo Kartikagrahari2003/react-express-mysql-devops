@@ -19,6 +19,17 @@ pipeline {
             }
         }
 
+        stage('Build Information') {
+            steps {
+                sh '''
+                echo "Build Number : $BUILD_NUMBER"
+                echo "Build URL    : $BUILD_URL"
+                echo "Branch       : $BRANCH_NAME"
+                echo "Workspace    : $WORKSPACE"
+                '''
+            }
+        }
+
         stage('Build Docker Images') {
             steps {
                 echo 'Building Docker images...'
@@ -44,8 +55,45 @@ pipeline {
 
         stage('Health Check') {
             steps {
-                sh 'curl -I http://localhost:3000'
+                sh '''
+                curl --fail http://localhost:3000
+                '''
             }
+        }
+
+        stage('Application Logs') {
+            steps {
+                sh 'docker compose logs --tail=20'
+            }
+        }
+
+        stage('Docker Cleanup') {
+            steps {
+                sh '''
+                docker image prune -f
+                docker container prune -f
+                '''
+            }
+        }
+
+        stage('Clean Workspace') {
+            steps {
+                cleanWs()
+            }
+        }
+    }
+
+    post {
+        always {
+            echo "Pipeline Finished"
+        }
+
+        success {
+            echo "Application deployed successfully."
+        }
+
+        failure {
+            echo "Deployment failed. Check console logs."
         }
     }
 }
