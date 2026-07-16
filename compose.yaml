@@ -2,32 +2,21 @@ services:
   backend:
     build:
       context: backend
-      
       args:
-        NODE_ENV: development
-
-    command: npm run start-watch
+        NODE_ENV: production
 
     environment:
       DATABASE_DB: example
       DATABASE_USER: root
       DATABASE_PASSWORD: /run/secrets/db-password
       DATABASE_HOST: db
-      NODE_ENV: development
+      NODE_ENV: production
 
     ports:
       - "80:80"
-      - "9229:9229"
-      - "9230:9230"
 
     secrets:
       - db-password
-
-    volumes:
-      - ./backend/src:/code/src:ro
-      - ./backend/package.json:/code/package.json
-      - ./backend/package-lock.json:/code/package-lock.json
-      - back-notused:/opt/app/node_modules
 
     networks:
       - public
@@ -38,10 +27,12 @@ services:
 
   db:
     image: mariadb:10.6.4-focal
-    # image: mysql:8.0.27
-
     command: --default-authentication-plugin=mysql_native_password
     restart: always
+
+    environment:
+      MYSQL_DATABASE: example
+      MYSQL_ROOT_PASSWORD_FILE: /run/secrets/db-password
 
     secrets:
       - db-password
@@ -52,33 +43,24 @@ services:
     networks:
       - private
 
-    environment:
-      MYSQL_DATABASE: example
-      MYSQL_ROOT_PASSWORD_FILE: /run/secrets/db-password
-
   frontend:
     build:
       context: frontend
 
     ports:
-      - "3000:3000"
-
-    volumes:
-      - ./frontend/src:/code/src
-      - /code/node_modules
-
-    networks:
-      - public
+      - "3000:80"
 
     depends_on:
       - backend
+
+    networks:
+      - public
 
 networks:
   public:
   private:
 
 volumes:
-  back-notused:
   db-data:
 
 secrets:

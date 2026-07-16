@@ -22,7 +22,7 @@ services:
     image: 889088857850.dkr.ecr.ap-south-1.amazonaws.com/react-express-frontend:latest
     container_name: frontend
     ports:
-      - "3000:3000"
+      - "3000:80"
     depends_on:
       - backend
     networks:
