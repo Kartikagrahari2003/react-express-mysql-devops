@@ -125,18 +125,42 @@ pipeline {
 
         stage('Deploy to Production via SSM') {
             steps {
-                sh '''
-                aws ssm send-command \
-                  --instance-ids i-0f27a796006cc2e8e \
-                  --document-name AWS-RunShellScript \
-                  --region ap-south-1 \
-                  --parameters commands='[
-                    "cd /home/ubuntu/react-express-mysql-devops",
-                    "aws ecr get-login-password --region ap-south-1 | docker login --username AWS --password-stdin 889088857850.dkr.ecr.ap-south-1.amazonaws.com",
-                    "docker compose -f compose.prod.yaml pull",
-                    "docker compose -f compose.prod.yaml up -d --remove-orphans"
-                  ]'
-                '''
+                script {
+
+                    def commandId = sh(
+                        script: '''
+                        aws ssm send-command \
+                        --instance-ids i-0f27a796006cc2e8e \
+                        --document-name "AWS-RunShellScript" \
+                        --region ap-south-1 \
+                        --query "Command.CommandId" \
+                        --output text \
+                        --parameters 'commands=[
+                        "cd /home/ubuntu/react-express-mysql-devops",
+                        "aws ecr get-login-password --region ap-south-1 | docker login --username AWS --password-stdin 889088857850.dkr.ecr.ap-south-1.amazonaws.com",
+                        "docker compose -f compose.prod.yaml pull",
+                        "docker compose -f compose.prod.yaml up -d --remove-orphans"
+                        ]'
+                        ''',
+                        returnStdout: true
+                    ).trim()
+
+                    echo "SSM Command ID: ${commandId}"
+
+                    sh """
+                    aws ssm wait command-executed \
+                    --command-id ${commandId} \
+                    --instance-id i-0f27a796006cc2e8e \
+                    --region ap-south-1
+                    """
+
+                    sh """
+                    aws ssm get-command-invocation \
+                    --command-id ${commandId} \
+                    --instance-id i-0f27a796006cc2e8e \
+                    --region ap-south-1
+                    """
+                }
             }
         }
 
